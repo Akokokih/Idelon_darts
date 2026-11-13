@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "idleon-darts-solver"
+version = "0.2.0"
+description = "Foundations for a calibrated Windows Idleon darts solver"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+idleon-darts = "idleon_darts.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["idleon_darts*"]
+
