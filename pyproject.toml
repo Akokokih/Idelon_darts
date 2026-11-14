@@ -4,10 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "idleon-darts-solver"
-version = "0.2.0"
-description = "Foundations for a calibrated Windows Idleon darts solver"
+version = "0.6.0"
+description = "Assisted Windows application for Idleon darts calibration and supervised shots"
 requires-python = ">=3.12"
 dependencies = []
+
+[project.optional-dependencies]
+capture = [
+    "dxcam[winrt]==0.3.0; sys_platform == 'win32'",
+    "numpy==2.5.4; sys_platform == 'win32'",
+    "comtypes==1.5.0; sys_platform == 'win32'",
+    "mss==10.1.0; sys_platform == 'win32'",
+]
+vision = ["opencv-python-headless==4.13.0.92", "numpy==2.5.4"]
+desktop-build = ["pyinstaller==6.22.3; sys_platform == 'win32'"]
 
 [project.scripts]
 idleon-darts = "idleon_darts.cli:main"

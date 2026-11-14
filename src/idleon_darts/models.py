@@ -143,6 +143,8 @@ class Observation:
     confidence: float
     invalid_reasons: tuple[str, ...] = ()
     image_path: str | None = None
+    target_half_height: float | None = None
+    sample_ns: int | None = None
 
     def __post_init__(self):
         text('observation_id', self.observation_id)
@@ -150,6 +152,9 @@ class Observation:
         integer('segment_index', self.segment_index, 1)
         integer('capture_start_ns', self.capture_start_ns, 0)
         integer('capture_end_ns', self.capture_end_ns, self.capture_start_ns)
+        if self.sample_ns is not None:
+            integer('sample_ns',self.sample_ns,0)
+            if self.sample_ns>self.capture_end_ns:raise ValueError('Image datée dans le futur')
         for name in ('launcher_position', 'target_center'):
             value = getattr(self, name)
             if value is not None:
@@ -179,6 +184,9 @@ class Observation:
             text('invalid_reason', reason)
         if self.image_path is not None:
             text('image_path', self.image_path)
+        if self.target_half_height is not None:
+            finite('target_half_height', self.target_half_height, self.target_radius or 0)
+            if self.target_half_height == 0:raise ValueError('Hauteur de cible positive requise')
 
     @property
     def complete(self) -> bool:
@@ -197,6 +205,7 @@ class Prediction:
     valid_until_ns: int
     predicted_impact: tuple[float, float]
     uncertainty_radius: float
+    uncertainty_axis: str = 'radial'
 
     def __post_init__(self):
         for name in ('observation_id', 'profile_id', 'model_version', 'context_key'):
@@ -205,6 +214,8 @@ class Prediction:
         integer('valid_until_ns', self.valid_until_ns, self.release_ns)
         point('predicted_impact', self.predicted_impact)
         finite('uncertainty_radius', self.uncertainty_radius, 0)
+        if self.uncertainty_axis not in ('radial', 'vertical'):
+            raise ValueError('Axe d incertitude invalide')
 
 
 @dataclass(frozen=True)

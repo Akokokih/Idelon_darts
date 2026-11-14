@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import zipfile
 
-TOP_FILES = {'README.md', 'pyproject.toml', '.gitignore'}
+TOP_FILES = {'README.md', 'pyproject.toml', '.gitignore', 'Start-Idleon-Darts.cmd', 'Install-Idleon-Darts.ps1'}
 TOP_DIRS = {'src', 'tests', 'tools', 'specs', '.specify', '.agents'}
 SKIP_DIRS = {'__pycache__', '.git', '.venv', 'venv', 'dist', 'build', '.pytest_cache'}
 PRIVATE_DIRS = {'work', 'private', 'sessions', 'recordings', 'captures', 'datasets',

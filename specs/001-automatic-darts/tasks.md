@@ -1,8 +1,8 @@
 # Tasks: Solveur automatique de Throwy Darts
 
 **Input**: [plan.md](plan.md), [spec.md](spec.md), recherche, modèle de données et contrats.
-**Date**: 2026-11-13. **Périmètre terminé** : tâches T001–T011, fondations, validation des sessions
-externes et rejeu des images. Les tâches T012–T028 restent ouvertes.
+**Date**: 2026-11-13. **Périmètre terminé** : tâches T001–T012, fondations, validation des sessions
+externes, rejeu et adaptateur de capture Windows. Les tâches T013–T028 restent ouvertes.
 
 Les tests sont demandés par la constitution et le guide de validation. Ils sont
 écrits avant les composants correspondants. Les marqueurs [P] identifient des
@@ -33,8 +33,8 @@ user story complète n’est déclarée terminée par ces tâches.
 
 - [x] T010 [US1] Tester l’import de sessions externes et le rejeu sans copie de données dans tests/replay/test_external_session.py ; chemins hors session, archives malformées, PNG illisibles, chronologie et compteurs incohérents doivent être rejetés.
 - [x] T011 [US1] Implémenter lecture seule des sessions externes dans src/idleon_darts/session.py et leur décodage dans replay.py ; « Un clic orphelin reste inconnu » ; aucune copie dans le dépôt, aucune exécution de fichiers importés.
-- [ ] T012 [P] [US1] Implémenter adaptateur écran MSS et garde Windows dans src/idleon_darts/capture.py et windows_io.py ; DPI physique, premier plan et rectangle validés avant/après capture ; tests spécifiques dans tests/windows/test_capture.py.
-- [ ] T013 [US1] Annoter et évaluer centre, lanceur, angle/direction du bras, vent et résultats dans src/idleon_darts/perception.py à partir des captures externes ; conserver confiance et motifs d’abstention ; ne pas distribuer les captures annotées.
+- [x] T012 [P] [US1] Implémenter capture DXGI et MSS avec garde Windows dans src/idleon_darts/capture.py et windows_io.py ; DPI physique, premier plan et rectangle validés avant/après capture ; tests spécifiques dans tests/windows/test_capture.py. Débit réel optimisé environ 99 im/s à 3440 × 1392 dans Idleon (validation.md).
+- [ ] T013 [US1] Annoter et évaluer centre, lanceur, angle/direction du bras, vent et résultats dans src/idleon_darts/perception.py à partir des captures externes ; conserver confiance et motifs d’abstention ; ne pas distribuer les captures annotées. Partiel : calibration colour-pca-v1 et contrôle sur nouvelles images implémentés, déplacement du lanceur suivi, vent None reconnu. Résultats, vents non nuls et évaluation annotée restent ouverts.
 - [ ] T014 [US1] Relier observe au mode sans entrée avec affichage des repères et journaux externes dans src/idleon_darts/cli.py et session.py ; vérifier nouvelle calibration après déplacement/redimensionnement.
 - [ ] T015 [US1] Évaluer 20 tirs puis SC-001 sur 100 tirs distincts, consigner mesures et limites dans specs/001-automatic-darts/validation.md ; aucun taux ne peut être déclaré sans données.
 
@@ -88,18 +88,48 @@ sa validation de contrôle dépend de l’intégration US2. T025 dépend des tir
 
 ## Implementation Strategy
 
-Les onze premières tâches sont terminées, sans modèle factice ni accès au bureau.
+Les douze premières tâches sont terminées, sans modèle factice. L'accès au bureau
+est limité au diagnostic explicite de capture sans entrée ni sauvegarde d'image.
 Le premier incrément utilisateur complet reste US1 : observation, annotations et rejeu.
 Passer ensuite aux tirs supervisés, puis aux statistiques et au trophée mesuré.
 L’outil de collecte et les données privées restent dans un dossier extérieur au projet.
 Les données utilisées dans les tests livrés sont entièrement synthétiques et temporaires.
 
-## État vérifié de cette passe
+## Dernière validation : timing et vent
 
-T001–T011 terminées : 11/28. T012–T028 restent ouvertes. 47 tests passent sous
-Python 3.12.15 sur macOS, données synthétiques temporaires uniquement.
-Aucun test réel Windows, aucune détection visuelle et aucun modèle ajusté ne sont
-encore validés. T010 a été écrite et exécutée en échec avant le lecteur T011.
+Complément diagonal : reprise depuis zéro, vent bas-droite 3 mph calibré sur six
+impacts exploitables (un autre impact masqué exclu). Le filtre des points proches
+du lanceur sépare l'animation de la main du vol réel. Erreur maximale de validation
+croisée 22,20 px ; marge 38,30 px, formule inchangée. Un tir automatique indépendant
+a fait +5, score 55, deux vies. Le vent bas-droite 5 mph suivant a été refusé sans
+entrée. Modèle actif privé : None, droite 6 mph, bas-droite 3 mph. Les autres
+contextes et la validation statistique restent ouverts. 90 tests : 88 passent,
+2 ignorés. Détails, coûts des deux sondes grises et limites dans validation.md.
+
+90 tests : 88 réussis, 2 ignorés faute de droits de liens symboliques. Entrées natives
+à clic unique, ajustement par points de vol et compensation de déclenchement
+implémentés. Le prédicteur reconstruit sa vitesse après images répétées, sauts ou
+changement de position/vent. La marge verticale et la projection de collision
+ont leurs propres contrôles, distincts du mode radial historique.
+
+Essais réels : un bullseye automatique à 4 mph ; après ajustement sur quatre
+trajectoires à 6 mph, deux tirs automatiques ont fait +5 puis +3 depuis deux
+positions. Score final 64, une vie. Changement de vitesse puis de direction :
+arrêt sans clic vérifié. Seul le modèle actif à 6 mph possède les annotations de
+trajectoire complètes ; les autres modèles privés sont des essais antérieurs.
+Le mode continu, le classificateur automatique de résultat, les vents hors
+couverture et les critères de réussite statistique restent ouverts.
+
+## Historique des premières passes
+
+T001–T012 terminées : 12/28. T013 partielle ; T014–T028 restent ouvertes. 75 tests exécutés sous
+Windows : 73 passent et 2 sont ignorés faute de droits de création de liens symboliques.
+Les quatorze tests de capture incluent garde simulée, pixels BGR, horodatage, invalidation
+persistante et deux essais natifs : fenêtre synthétique cachée avec restauration DPI,
+puis initialisation/fermeture MSS sans lecture du bureau. Un essai séparé a vérifié
+la capture sur Idleon ; aucune détection visuelle ni aucun modèle ajusté ne sont
+encore validés. Les tests T012
+ont été exécutés en échec avant l'implémentation. T010 précédait aussi le lecteur T011.
 
 La commande validate-session contrôle les dossiers et ZIP externes sans extraction,
 sans copie ni écriture. Le rejeu fournit les pixels BGR, temps réels et segments ;
@@ -109,5 +139,27 @@ Les marqueurs humains restent séparés des résultats et les clics incomplets n
 jamais appariés à travers les pauses. Les images et le collecteur restent hors projet.
 
 Les commandes observe, replay et run restent réservées : le contrat de replay complet
-nécessite encore perception et prédiction. Les prochaines tâches sont T012–T015 pour
+nécessite encore perception et prédiction. Les prochaines tâches sont T013–T015 pour
 achever le MVP US1. Aucun hook d’extension n’est configuré.
+
+La commande capture-check teste la capture en mémoire sans profil, sans reconnaissance
+et sans sauvegarde. MSS 10.1.0 est une dépendance optionnelle propre au produit.
+Le verrouillage complet T026 reste ouvert pour les futurs composants. L'extra capture
+est figé sur DXcam 0.3.0, NumPy 2.5.4, comtypes 1.5.0 et MSS 10.1.0.
+La capture optimisée sur Throwy Darts donne environ 99 im/s à 3440 × 1392 avec DXGI
+par défaut, contre 19,6 avec MSS. Neuf cents acquisitions DXGI mesurées, puis 300
+par la commande publique ; image vérifiée, gardes conservés, aucune calibration.
+L'objectif moyen de 60 im/s est dépassé sur cet essai ; limites dans validation.md.
+
+Calibration visuelle réelle : 360 orientations ajustées, écart P95 des droites au
+pivot 2,24 px. Contrôle indépendant sur 600 images : angle/cible/vent None disponibles
+sur 600 ; direction estimée disponible sur 563 ; environ 70,3 im/s. Après déplacements
+et bullseye : 120 images, 114 directions disponibles, environ 63,9 im/s.
+Ces compteurs ne sont pas une mesure d'exactitude SC-001.
+
+Six lancers enregistrés par un collecteur privé distinct, dont le tir de démarrage
+et quatre tirs en partie : score final 13, deux vies, un bullseye confirmé par le
+score +5. Deux clics préalables hors enregistrement restent séparés. Un retard
+d'outil de 965 ms a causé un miss et une vie perdue. Tous les détails et limites
+sont dans validation.md. Aucun modèle de tir n'est déclaré calibré ; FR-005, T015,
+T017 et la validation de réussite restent ouverts. Le collecteur privé n'est pas livré.

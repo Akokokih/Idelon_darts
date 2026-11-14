@@ -104,3 +104,52 @@ Sources primaires consultées le 13 novembre 2026 :
 [format PNG du W3C](https://www.w3.org/TR/png-3/),
 [encodeur MSS 10.1.0](https://raw.githubusercontent.com/BoboTiG/python-mss/v10.1.0/src/mss/tools.py).
 Le décodage est limité au format du collecteur, sans prétendre couvrir tout PNG.
+
+## Décision T012 — capture Windows sans calibration
+
+Adaptateur MSS 10.1.0 optionnel, chargé à la demande. La région par défaut est
+la zone cliente de la fenêtre explicite, traduite en coordonnées écran physiques
+par GetClientRect/ClientToScreen. Cela exclut les bordures invisibles des fenêtres
+maximisées. Un contexte DPI par moniteur V2 est appliqué au thread puis restauré,
+sans modifier globalement le mode DPI de l'application à l'import.
+
+GetDpiForWindow fournit le DPI de la fenêtre cible (96 si elle n'est pas consciente
+du DPI), pas une mesure indépendante du DPI physique du moniteur. Le garde vérifie
+identité HWND/PID/thread, focus, visibilité, minimisation, état DWM, géométrie et
+écran principal avant/après capture. Il ne garantit pas l'absence de recouvrement
+ni la détection d'un aller-retour complet entre deux lectures.
+
+Sources primaires consultées pour cette implémentation :
+[GetClientRect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getclientrect),
+[SetThreadDpiAwarenessContext](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setthreaddpiawarenesscontext),
+[GetDpiForWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow),
+[implémentation MSS Windows 10.1.0](https://raw.githubusercontent.com/BoboTiG/python-mss/v10.1.0/src/mss/windows.py).
+Les tests natifs automatisés ne lisent pas les pixels du bureau. Un essai réel
+distinct a confirmé la capture Idleon à environ 19,6 im/s sur 3440 × 1392 ; voir
+[validation.md](validation.md). Le verrouillage complet des dépendances reste ouvert.
+
+## Optimisation T012 — DXGI par défaut, MSS en compatibilité
+
+Le profilage MSS à 3440 × 1392 attribue environ 30 ms à l'acquisition et 15 ms
+à la conversion Python des canaux ; accélérer uniquement la conversion ne suffit
+pas pour viser 60 im/s. Le chemin par défaut utilise donc DXcam 0.3.0 avec backend
+DXGI, processeur NumPy compilé et sortie BGR. Une seule copie vers des octets
+immuables protège la frame contre la réutilisation du tampon d'acquisition.
+
+La capture reste synchrone et demande `new_frame_only=True`, sans cache vidéo ni
+thread de capture. L'absence d'image entraîne une attente bornée avec vérification
+du contexte. Les horodatages encadrent acquisition, attente et gardes ; ils ne sont
+pas des horodatages de rendu du moteur du jeu. L'API ne fabrique pas une nouvelle
+frame à partir d'une image mise en cache.
+
+Sources : [documentation et API DXcam](https://github.com/ra1nty/DXcam),
+[distribution DXcam 0.3.0](https://pypi.org/project/dxcam/0.3.0/), ainsi que le code
+installé de dxcam.py et core/dxgi_duplicator.py pour cette version. Le chemin DXGI
+utilise AcquireNextFrame avec délai nul ; l'attente et le refus après environ
+100 ms sont gérés par notre source. Les fichiers DXcam restent une dépendance,
+sans copie de leur code dans le solveur.
+
+Les versions de capture sont figées après essai Windows : DXcam 0.3.0, NumPy 2.5.4,
+comtypes 1.5.0, MSS 10.1.0. Trois séries de 300 images donnent environ 99 im/s, avec
+P95 autour de 10,5 ms ; voir validation.md pour le protocole et ses limites. La
+validation future avec détection et modèle de tir reste à effectuer.

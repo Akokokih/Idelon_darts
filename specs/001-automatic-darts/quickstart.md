@@ -2,9 +2,12 @@
 
 ## État actuel
 
-Conception, fondations et lecteur externe terminés ; le solveur visuel et les tirs restent à implémenter. Les commandes observe/replay/run
+L’application propose la calibration automatique, les séries de tirs automatiques
+et l’export local pour analyse avec Codex. Voir les cinq étapes du README.
+Le taux de 90 % reste à atteindre : dernier lot corrigé de 20 tirs, 16 rouges et zéro vie perdue.
+Les commandes observe/replay/run
 ci-dessous sont des critères d’acceptation pour la prochaine phase,
-pas des commandes exécutables aujourd’hui. Les tests Windows restent à réaliser.
+pas des commandes exécutables aujourd’hui. Utiliser `gui` ou `auto-run` pour les séries expérimentales.
 
 ## Vérifier les fondations aujourd’hui
 
@@ -17,11 +20,54 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Attendu : statut `foundation`, jeu automatique indisponible et 47 tests réussis.
-Les tests synthétiques ne lisent pas les captures et n’envoient aucune entrée.
-Sur la machine de développement, ils ont été exécutés sur Python 3.12.15 avec
-`PYTHONPATH=src`, sans installer de dépendance native. L’installation sous Windows
-et les essais en jeu restent à réaliser.
+Le statut distingue les fonctions disponibles des commandes réservées. Deux tests
+peuvent être ignorés car la création de liens symboliques n'est pas autorisée. L'environnement `.venv` propre au dépôt
+contient DXcam 0.3.0, NumPy 2.5.4, comtypes 1.5.0 et MSS 10.1.0.
+Les tests ne lisent aucune capture privée et n'envoient aucune entrée. Deux tests
+natifs vérifient une fenêtre synthétique cachée et l'ouverture/fermeture de MSS,
+sans lecture des pixels du bureau. Un essai réel distinct est consigné dans validation.md.
+
+## Vérifier la capture Windows sans calibration
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[capture]"
+Get-Process | Where-Object { $_.MainWindowTitle -match 'Idleon' } | Select-Object Id, MainWindowTitle, MainWindowHandle
+.\.venv\Scripts\python.exe -m idleon_darts capture-check --window-id 123456 --frames 30 --delay 5
+```
+
+DXGI est sélectionné par défaut. Pour comparer le mode de compatibilité, ajouter
+`--backend mss`. La commande affiche le backend et ne bascule pas automatiquement
+en cas d'échec de DXGI. Le JSON contient aussi frames_over_16_67ms (budget 60 im/s).
+
+Remplacer le HWND d'exemple par `MainWindowHandle`, puis mettre le jeu au premier
+plan pendant les cinq secondes. Attendu : code 0, JSON avec 30 images, dimensions,
+durées et `images_saved=false`, `inputs_sent=false`. Ces durées encadrent aussi les
+gardes et la conversion BGR ; elles ne mesurent pas la latence de rendu du jeu.
+Le diagnostic ne vérifie pas que les images contiennent le mini-jeu attendu.
+
+La zone cliente doit rester entièrement sur l'écran principal. Une perte de focus,
+fenêtre masquée/minimisée, géométrie/DPI modifiés ou erreur MSS entraîne le code 1.
+Relancer le diagnostic après correction ; un profil de tir devra être recalibré si
+sa géométrie change. Ctrl+C interrompt avec code 130. Aucun profil n'est requis.
+Le garde ne garantit ni absence de recouvrement ni détection d'un changement de
+focus qui revient entre deux lectures. L'essai optimisé à 3440 × 1392 donne environ
+99 im/s avec DXGI, contre 19,6 avec MSS ; voir [validation.md](validation.md).
+L'objectif moyen de 60 im/s est dépassé sur cet essai, sans garantie par image.
+DXGI attend une nouvelle image ; une scène sans mise à jour pendant environ
+100 ms entraîne un refus explicite plutôt que la réutilisation d'une image en cache.
+
+## Calibration visuelle disponible
+
+Installer `.[capture,vision]`, puis utiliser `calibrate-visual` et `check-calibration`
+selon le [README](../../README.md). Le JSON des régions doit correspondre à la fenêtre
+réelle ; la zone wind_none doit être annotée sur un texte None visible. Les sorties
+de calibration, images et rapports restent hors dépôt, dans de nouveaux chemins.
+Le profil produit n'autorise aucun tir automatique.
+
+Résultats de cette passe : ajustement sur 360 images, contrôle sur 600 nouvelles
+images, suivi du déplacement du personnage et un bullseye supervisé (+5).
+Score final observé 13, deux vies. Les résultats ne valident pas un modèle de tir,
+les vents non nuls ou les critères SC-001–005 ; voir [validation.md](validation.md).
 
 ## Valider un dossier ou ZIP externe aujourd’hui
 

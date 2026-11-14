@@ -12,7 +12,10 @@ from .models import finite, integer, text
 
 class Controller:
     def __init__(self, profile: Profile, *, min_confidence: float,
-                 max_age_ns: int = 100_000_000, result_timeout_ns: int = 3_000_000_000):
+                 max_age_ns: int = 100_000_000, result_timeout_ns: int = 3_000_000_000,
+                 require_centre_precision: bool = True):
+        if type(require_centre_precision) is not bool:raise ValueError('Mode de précision invalide')
+        self.require_centre_precision = require_centre_precision
         finite('min_confidence', min_confidence, 0)
         if min_confidence > 1:
             raise ValueError('min_confidence hors [0,1]')
@@ -109,8 +112,16 @@ class Controller:
                 or prediction.model_version != self.profile.model_version
                 or prediction.context_key != observation.context_key):
             return self._deny('prediction_mismatch')
-        distance = math.dist(prediction.predicted_impact, observation.target_center)
-        if distance + prediction.uncertainty_radius > observation.target_radius:
+        if prediction.uncertainty_axis == 'vertical':
+            if (observation.target_half_height is None or
+                    abs(prediction.predicted_impact[0] - observation.target_center[0]) > 1e-6):
+                return self._deny('invalid_vertical_projection')
+            distance = abs(prediction.predicted_impact[1] - observation.target_center[1])
+            tolerance = observation.target_half_height
+        else:
+            distance = math.dist(prediction.predicted_impact, observation.target_center)
+            tolerance = observation.target_radius
+        if distance > tolerance or (self.require_centre_precision and distance + prediction.uncertainty_radius > tolerance):
             return self._deny('impact_outside_centre', suspend=False)
         if now_ns < prediction.release_ns:
             return self._deny('waiting_for_release_window', suspend=False)

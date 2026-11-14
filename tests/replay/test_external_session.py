@@ -213,7 +213,12 @@ class SessionTests(unittest.TestCase):
         outside = self.base/'outside.png'
         outside.write_bytes(frame.read_bytes())
         frame.unlink()
-        frame.symlink_to(outside)
+        try:
+            frame.symlink_to(outside)
+        except OSError as exc:
+            if getattr(exc, 'winerror', None) == 1314:
+                self.skipTest('Creation de liens symboliques non autorisee sous Windows')
+            raise
         self.reject()
         frame.unlink()
         (self.root/'frames/00000002.png').unlink()
@@ -283,7 +288,11 @@ class SessionTests(unittest.TestCase):
         for name in ['../escape', '/absolute', 'C:/escape', 'folder\\escape']:
             make_zip(self.root, archive)
             with zipfile.ZipFile(archive, 'a') as z:
-                z.writestr(name, 'bad')
+                # Preserve the malformed name even on Windows, where ZipInfo
+                # otherwise converts backslashes before writing the archive.
+                entry = zipfile.ZipInfo(name)
+                entry.filename = name
+                z.writestr(entry, 'bad')
             with self.subTest(name=name), self.assertRaises(SessionValidationError):
                 open_session(archive)
         make_zip(self.root, archive)

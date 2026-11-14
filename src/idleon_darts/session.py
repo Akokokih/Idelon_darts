@@ -96,6 +96,10 @@ class _Source:
                 all_names = set()
                 total = 0
                 for info in infos:
+                    # ZipInfo normalizes Windows separators when reading; validate
+                    # the original member name before that normalization hides it.
+                    original = info.orig_filename
+                    safe_name(original[:-1] if original.endswith('/') else original)
                     name = safe_name(info.filename[:-1] if info.is_dir() else info.filename)
                     if name.casefold() in all_names:
                         raise SessionValidationError('Nom de membre ZIP duplique ou ambigu')

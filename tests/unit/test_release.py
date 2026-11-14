@@ -48,6 +48,11 @@ class ReleaseTests(unittest.TestCase):
             project = root/'project'
             self.project(project)
             (root/'secret').write_text('private')
-            (project/'linked').symlink_to(root/'secret')
+            try:
+                (project/'linked').symlink_to(root/'secret')
+            except OSError as exc:
+                if getattr(exc, 'winerror', None) == 1314:
+                    self.skipTest('Creation de liens symboliques non autorisee sous Windows')
+                raise
             with self.assertRaises(ValueError):
                 build_release(project, root/'release.zip')

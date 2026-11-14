@@ -13,6 +13,35 @@
   Une session en cours est toujours refusée. Une session en erreur exige
   --allow-partial et ne devient pas une preuve de performance complète.
 - `idleon-darts --version` : version du paquet.
+- `idleon-darts calibrate-visual --window-id <HWND> --regions <JSON> --output <nouveau-dossier-prive> [--frames 240] [--delay 3]` :
+  mesure un balayage sans entrée souris et écrit la calibration visuelle hors dépôt.
+  Le JSON d'entrée contient scene, arm, board, anchor, wind_none, rectangles en
+  pixels écran. wind_none est une annotation humaine du texte None réellement visible.
+  30 à 1000 images ; balayage ≥25 degrés ; refus si moins de 90 % de lames détectées
+  ou P95 de distance des droites au pivot >8 px. Ces seuils sont des choix de qualité,
+  pas une validation de précision en jeu. Le profil créé n'arme aucun modèle de tir.
+- `idleon-darts check-calibration --window-id <HWND> --calibration <dossier-prive> [--frames 240] [--delay 3] [--report <nouveau-JSON>] [--preview <nouveau-PNG>]` :
+  contrôle fini sans entrée souris, 1 à 1000 images, avec compteurs de repères
+  disponibles et motifs d'abstention. Le JSON privé optionnel conserve chaque
+  observation ; l'aperçu optionnel montre les repères recalés. Une interruption de
+  capture produit un bilan partiel avec complete=false et le code 1. Géométrie/DPI
+  incompatibles refusés avant le premier grab. Les sorties restent hors dépôt.
+  Ces commandes renvoient 0 si terminées, 1 si refus, 2 pour arguments invalides,
+  130 sur Ctrl+C. Les diagnostics ne sont pas des sessions d'enregistrement v1.
+- `idleon-darts capture-check --window-id <HWND> [--frames 10] [--delay 3] [--backend dxgi|mss]` :
+  diagnostic Windows sans calibration, entrée synthétique ni sauvegarde. HWND
+  positif décimal ou hexadécimal, 1 à 300 images, délai fini entre 0 et 30 secondes.
+  La zone cliente physique doit être au premier plan et sur l'écran principal.
+  Focus/visibilité/identité/rectangle/DPI sont contrôlés avant et après capture.
+  Code 0 et JSON des dimensions/durées si terminé, incluant elapsed_seconds,
+  effective_fps (débit mural), capture_ms_p95 (rang supérieur à 95 %) et
+  frames_over_16_67ms (seuil 1000/60 ms), frames_over_100ms et backend ; 1 si capture refusée ; 2 pour
+  arguments invalides ; 130 sur Ctrl+C. `status` annonce `screen_capture_implemented=true` ;
+  cela ne signifie pas que l'observation avec détection est disponible.
+  DXGI est le défaut, sans repli silencieux vers MSS. Il demande une nouvelle image
+  à chaque acquisition et copie le tampon en BGR immuable ; aucune nouvelle image
+  pendant environ 100 ms entraîne un refus. Aucun thread de capture ni cache vidéo.
+  `status` expose capture_backends et default_capture_backend, sans import natif.
 - Les commandes observe/replay/run ci-dessous sont reconnues mais réservées :
   elles renvoient le code 2 et un message d’indisponibilité, sans lecture de profil
   ni entrée bureau.

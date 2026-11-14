@@ -6,6 +6,28 @@ from tests.unit.helpers import context, observation, prediction, profile
 
 
 class ControllerTests(unittest.TestCase):
+    def test_supervised_uncertain_shot_keeps_centre_context_and_freshness_guards(self):
+        c=Controller(profile(),min_confidence=.9,require_centre_precision=False)
+        self.arm(c)
+        self.assertTrue(self.ready(c,pred=prediction(uncertainty_radius=100.)).allowed)
+        self.assertFalse(self.ready(c,pred=prediction(predicted_impact=(500.,500.),uncertainty_radius=100.)).allowed)
+        self.assertFalse(self.ready(c,obs=observation(invalid_reasons=('wind-unknown',))).allowed)
+
+    def test_vertical_collision_projection_uses_measured_height_and_still_checks_alignment(self):
+        for axis, height, x, uncertainty, allowed in [
+                ('vertical', 20., 300., 15., True),
+                ('radial', 20., 300., 15., False),
+                ('vertical', None, 300., 15., False),
+                ('vertical', 20., 301., 15., False),
+                ('vertical', 20., 300., 21., False)]:
+            with self.subTest(axis=axis, height=height, x=x, uncertainty=uncertainty):
+                c = self.make(); self.arm(c)
+                decision = self.ready(c, obs=observation(target_half_height=height),
+                                      pred=prediction(uncertainty_axis=axis,
+                                                      predicted_impact=(x, 200.),
+                                                      uncertainty_radius=uncertainty))
+                self.assertEqual(decision.allowed, allowed)
+
     def make(self):
         return Controller(profile(), min_confidence=0.9, result_timeout_ns=10_000_000)
 

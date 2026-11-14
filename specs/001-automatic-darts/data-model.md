@@ -36,6 +36,26 @@ Distinguer opportunités, abstentions, tirs, annotations et résultats détecté
 Les fichiers privés importés portent une provenance et ne deviennent pas
 implicitement des fixtures redistribuables.
 
+## Calibration visuelle initiale
+
+`VisualCalibration` est un complément privé au Profile v1, sans changement de son
+schéma. Le dossier contient profile.json, visual.json, reference.png, anchor.png et
+wind-none.png. visual.json lie profile_id, schema_version=1, quatre régions relatives
+à la ROI, pivot, dimensions de la zone rouge, seuil de comparaison et métriques
+d'ajustement. Les régions d'entrée CLI sont en pixels écran physiques, puis converties.
+
+Le pivot est l'intersection ajustée des axes de la lame, pas une origine balistique
+prouvée. Un décalage de la plateforme retrouvé par son modèle translate le pivot
+et la zone de recherche du bras ; il remet à zéro l'historique du sens de balayage.
+Seule la référence explicitement annotée None autorise wind_features=(0.,) et
+context_key=wind-none. Tout autre vent reste inconnu. Les résultats de tirs ne sont
+pas classés par ce détecteur.
+
+Les profils créés restent sans model_version et sans calibration_coverage de tir.
+Les scores de qualité géométrique/visuelle ne sont pas des probabilités. Les
+observations issues d'un contrôle fini ne constituent pas encore une session v1
+compatible avec le lecteur du collecteur externe.
+
 ## Transitions
 
 - `PAUSED → OBSERVING` : activation explicite, fenêtre et profil compatibles.
@@ -85,3 +105,19 @@ séparées. Dans une session complète : tentatives = écrites + abandonnées ; 
 et durée des segments, débit et références doivent être cohérents. Dans une session
 interrompue explicitement acceptée : les tentatives perdues pendant l’erreur et le
 segment final non fermé sont signalés. Aucun résultat d’impact n’est inventé.
+
+## Modèle de trajectoire et phase d'entrée
+
+Dans `empirical-launch-v2`, chaque contexte possède les coefficients `gain`,
+`curvature`, le domaine distance/angle et les erreurs de calibration. L'angle de
+vol ajusté est distinct de `Observation.arm_angle`, qui mesure l'axe de la
+fléchette tenue en main. L'inverse résout le polynôme en tangente et conserve
+uniquement une racine couverte par les mesures.
+
+Le couple optionnel `phase_correction_ns` (entier signé, ±100 ms) et
+`end_to_end_uncertainty_px` (finie, au moins 5 px) est réservé au modèle v2.
+Une valeur positive retarde la commande prévue ; ce déphasage empirique
+n'identifie pas le temps de traitement interne du jeu. La marge effective est
+le maximum de cette marge complète et de `uncertainty_px`. Le précontrôle et
+la réservation du tir doivent utiliser la même marge. Les anciens modèles
+sans ce couple gardent leur comportement antérieur.

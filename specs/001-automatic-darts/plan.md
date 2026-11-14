@@ -12,15 +12,16 @@ La chaîne prévue est capture → détection → estimation d’impact → déc
 → entrée souris → confirmation du résultat. La physique sera identifiée à partir
 des observations ; aucune constante du jeu n’est supposée connue.
 
-Le plan et la conception sont terminés. Les fondations et la lecture externe T001–T011 sont implémentées ;
-les adaptateurs natifs, la détection et le modèle de tir restent à construire. Un outil de collecte ponctuel est préparé séparément pour les essais
+Le plan et la conception sont terminés. Les fondations, la lecture externe et la capture Windows T001–T012 sont implémentées ;
+les entrées natives, la détection et le modèle de tir restent à construire. Un outil de collecte ponctuel est préparé séparément pour les essais
 privés : son code, ses enregistrements et son archive sont exclus du projet et du
 rendu final. Le solveur final aura son propre mode observation, requis par FR-002.
 
 ## Technical Context
 
 **Language/Version**: Python 3.12, 64 bits.
-**Primary Dependencies**: MSS pour les pixels ; OpenCV et NumPy pour la vision et
+**Primary Dependencies**: DXcam 0.3.0 (DXGI, processeur NumPy compilé) pour les pixels,
+MSS 10.1.0 en compatibilité ; OpenCV et NumPy pour la vision et
 l’estimation ; adaptateur Win32 par ctypes pour premier plan, DPI et entrées.
 Les versions du solveur seront figées lors de l’implémentation après essai Windows.
 Le collecteur temporaire utilise MSS 10.1.0 et pynput 1.8.1, séparément.
@@ -67,7 +68,7 @@ specs/001-automatic-darts/
 └── contracts/cli-and-recordings.md
 ```
 
-`tasks.md` contient 28 tâches ; les onze premières sont terminées.
+`tasks.md` contient 28 tâches ; les douze premières sont terminées.
 
 ### Source Code (repository root)
 

@@ -1,93 +1,54 @@
-# Idleon Darts Solver — Steam Windows
+# Idleon Darts — Windows
 
-Fondations Python préparées avec GitHub Spec Kit. Le solveur ne joue pas encore :
-la détection visuelle, les adaptateurs Windows et le modèle de tir restent à construire
-et à calibrer sur des captures réelles.
+Un helper pour lancer automatiquement dans **Throwy Darts**, lire les résultats et enregistrer les données pour les analyser plus tard.
 
-## État actuel
+La version 0.6 utilise le modèle à relâchement programmé. Sa précision de référence est **65 % de rouges sur 20 tirs**, sans vie perdue sur ce lot. Les 90 % ne sont pas validés.
 
-- Constitution, spécification, plan et 28 tâches définis.
-- Onze tâches terminées (T001–T011), dont lecture des sessions externes.
-- Formats de données validés, chargement de profils et contrôleur indépendant du bureau.
-- Interfaces pour capture produit, perception, prédiction, sessions, rejeu et entrées.
-- Commandes `status` et `validate-session` disponibles ; observe/replay/run réservées.
-- 47 tests passent sous Python 3.12.15 sur macOS, données synthétiques uniquement.
+## Télécharger la version Windows
 
-Aucun taux de réussite en jeu, délai d’arrêt Windows ni trophée n’est encore validé.
-Aucun profil fictivement calibré n’est livré. Les dépendances natives seront ajoutées
-et figées quand leurs adaptateurs seront implémentés et testés.
+**[Télécharger Idleon Darts 0.6.0 pour Windows x64](https://github.com/Akokokih/Idelon_darts/releases/download/v0.6.0/IdleonDarts-0.6.0-Windows-x64.zip)**
 
-## Démarrage sous Windows
+Décompresser entièrement le ZIP dans un dossier personnel, puis double-cliquer sur **Lancer.cmd**. Python est inclus : aucune installation Python n'est nécessaire pour cette version.
 
-Python 3.12 64 bits requis. Depuis PowerShell dans ce dossier :
+Conserver le dossier `IdleonDarts` et son sous-dossier `_internal` ensemble. Les données créées à l'utilisation sont enregistrées dans `local/idleon-darts-app`, à côté du lanceur.
 
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\python.exe -m idleon_darts status
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
+## Mode d’emploi
 
-Le statut indique les fonctions réellement disponibles. Le paquet de base n’a pas
-de dépendance native et n’accède pas au bureau. L’installation par pip peut télécharger
-les outils de construction du paquet. Les essais Windows restent à effectuer.
+1. Ouvrir Idleon sur Steam et afficher le mini-jeu **Throwy Darts**.
+2. Ouvrir **Lancer.cmd** dans la version Windows, ou **Start-Idleon-Darts.cmd** pour l'installation depuis les sources.
+3. Choisir le **nombre de tirs** : `20` par défaut, ou `0` pour continuer jusqu’à l’arrêt.
+4. Cliquer sur **Lancer**. Au premier démarrage, **Préparer et lancer** effectue automatiquement la calibration.
 
-## Valider les captures depuis leur dossier privé
+L’application détecte Idleon et mémorise le profil et le modèle. Elle ne tire pas à son ouverture : il faut cliquer sur Lancer.
 
-Laisse les captures et leur ZIP à l’extérieur de ce projet. Après installation :
+**Arrêter** ou **F8** interrompt la série. Les positions et le vent sont relus avant les tirs. Toute la bande rouge compte comme une réussite.
 
-```powershell
-.\.venv\Scripts\python.exe -m idleon_darts validate-session "D:\CapturesPrivees\session.zip"
-```
+## Récupérer les données
 
-Un dossier de session contenant session.json, frames.csv, events.jsonl et frames/
-est également accepté. La commande vérifie chaque image, ses dimensions et son
-contenu, les bornes temporelles, les compteurs et les chemins. Elle ne copie rien,
-n’extrait pas le ZIP et n’exécute aucun fichier de la session.
+À la fin d’une série, cliquer sur **Exporter**. Le ZIP contient les scores, les timings, les paramètres et les captures disponibles.
 
-Une session encore en cours est refusée. Pour diagnostiquer une session interrompue,
-utilise explicitement `--allow-partial` : le bilan indique alors `complete=false`.
-Les marqueurs F6/F7 restent des annotations, pas des centres prouvés.
+L’export reste sur votre ordinateur : aucun fichier n’est envoyé sur GitHub ou à un autre service. Les trajectoires sont enregistrées par défaut.
 
-Le rejeu image par image est disponible par l’API `replay_frames`, avec les temps
-réels et les segments. La commande `replay` complète reste indisponible tant que
-la détection et le moteur de prédiction ne sont pas implémentés.
+## Options avancées
 
-## Documents Spec Kit
+Elles sont masquées au démarrage et ne sont pas nécessaires pour jouer normalement.
 
-- [Constitution](.specify/memory/constitution.md)
-- [Spécification](specs/001-automatic-darts/spec.md)
-- [Plan](specs/001-automatic-darts/plan.md)
-- [Tâches et avancement](specs/001-automatic-darts/tasks.md)
-- [Modèle de données](specs/001-automatic-darts/data-model.md)
-- [Contrats](specs/001-automatic-darts/contracts/cli-and-recordings.md)
-- [Validation](specs/001-automatic-darts/quickstart.md)
+Utilisez **Options avancées** pour recalibrer après un changement de zoom ou de taille de fenêtre, choisir une autre fenêtre Idleon, charger un modèle, consulter l’aperçu et les journaux, ou confirmer un résultat ambigu.
 
-MVP suivant : US1, observer et analyser 20 tirs sans clic automatique. Les prochaines
-tâches sont T012–T015 ; le réglage des repères et du vent dépend des captures privées.
+Si le mini-jeu n’est pas reconnu, affichez Throwy Darts et relancez la préparation. Une lecture de résultat ambiguë suspend les tirs jusqu’à sa confirmation.
 
-## Séparation des données privées
+## Installer depuis les sources
 
-Le collecteur temporaire et ses enregistrements restent dans un dossier extérieur
-au projet. Ils ne sont ni une dépendance, ni des fichiers de test distribués, ni une
-partie du livrable. Les interfaces `capture.py`/`session.py` du produit ne contiennent
-pas le collecteur. Le lecteur lit les dossiers et ZIP externes sans copie ni extraction.
+Prérequis : Windows et Python 3.12, avec Idleon installé via Steam.
 
-Les tests créent leurs données synthétiques dans des dossiers temporaires. `.gitignore`
-exclut données et médias, et la construction refuse leur présence dans le projet.
-Pour produire une archive source en dehors de ce dossier :
+1. Télécharger le code du dépôt et le décompresser.
+2. Dans PowerShell, depuis le dossier du projet, exécuter `./Install-Idleon-Darts.ps1`.
+3. Ouvrir `Start-Idleon-Darts.cmd`.
 
-```powershell
-.\.venv\Scripts\python.exe tools/build_release.py
-```
+Depuis les sources, les profils et captures sont conservés hors du code, dans `../local/idleon-darts-app/`. Aucun profil ni aucune capture personnelle n'est fourni dans les archives de distribution.
 
-L’archive contient uniquement les fichiers sources, tests synthétiques et documents
-explicitement autorisés. Un dossier de sessions, média ou collecteur privé détecté
-fait échouer la construction avant remplacement de l’archive précédente.
+## Développement et mesures
 
-## Références
+Tests : `.venv\Scripts\python.exe -m unittest discover -s tests`.
 
-[GitHub Spec Kit](https://github.com/github/spec-kit),
-[workflow officiel](https://github.github.com/spec-kit/quickstart.html).
-La recherche et les sources techniques sont dans
-[research.md](specs/001-automatic-darts/research.md).
+L’[historique des mesures](specs/001-automatic-darts/validation.md) décrit les tests réels et leurs limites. L’[archive technique](specs/001-automatic-darts/advanced-usage.md) conserve les détails du moteur et des commandes avancées.

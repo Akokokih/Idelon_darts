@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-13
 
-**Status**: Spécification validée ; fondations et lecture externe T001–T011 implémentées ; US1–US3 ouvertes.
+**Status**: Spécification validée ; fondations, lecture externe et capture Windows T001–T012 implémentées ; US1–US3 ouvertes.
 
 **Input**: « Explique-moi le jeu des fléchettes sur Idleon. En utilisant GitHub
 Spec Kit, je voudrais faire un solveur automatique. Steam sur Windows : lecture
